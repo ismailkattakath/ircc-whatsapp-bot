@@ -29,7 +29,7 @@ let
         . ${lib.escapeShellArg cfg.environmentFile}
         set +a
       ''
-    else if pkgs.stdenv.isDarwin then
+    else if pkgs.stdenv.hostPlatform.isDarwin then
       ''
         OPENAI_API_KEY="$(/usr/bin/security find-generic-password -a "$(id -un)" -s OPENAI_API_KEY -w 2>/dev/null || true)"
         SERPER_API_KEY="$(/usr/bin/security find-generic-password -a "$(id -un)" -s SERPER_API_KEY -w 2>/dev/null || true)"
@@ -104,13 +104,29 @@ in
       description = "LangSmith project name traces are grouped under.";
     };
 
+    localRag = {
+      enable = lib.mkEnableOption ''
+        provisioning a local RAG Postgres (pgvector + Ollama embed()) via
+        nix-local-rag (github:ismailkattakath/nix-local-rag), instead of
+        bringing your own via `ragdbUri`. Same "createLocally" idiom as
+        nixpkgs' own services.<app>.database.createLocally options -- off
+        by default so a host that already provisions pgvectorLocal itself
+        (e.g. because something else on the host also needs it) doesn't get
+        a second, redundant instance
+      '';
+    };
+
     ragdbUri = lib.mkOption {
       type = lib.types.str;
-      default = "postgresql://mcp@127.0.0.1:5433/ragdb";
+      default = config.services.pgvectorLocal.databaseUri;
       description = ''
         pgvector Postgres connection string. Needs a `docs` table
         (content/metadata/embedding) and an `embed(text)` SQL function --
-        see the repo README's RAG section.
+        see the repo README's RAG section. Defaults to nix-local-rag's own
+        `services.pgvectorLocal.databaseUri` (single-sourced, not
+        duplicated here) whether or not `localRag.enable` actually turns
+        that service on -- override this directly if you're pointing at
+        Postgres running elsewhere instead.
       '';
     };
 
@@ -133,16 +149,19 @@ in
         message = "services.irccWhatsappBot.allowedNumbers is empty -- the bot would refuse every sender.";
       }
       {
-        assertion = cfg.environmentFile != null || pkgs.stdenv.isDarwin;
+        assertion = cfg.environmentFile != null || pkgs.stdenv.hostPlatform.isDarwin;
         message = "services.irccWhatsappBot.environmentFile must be set on non-Darwin systems -- there is no Keychain fallback there.";
       }
     ];
+
+    services.pgvectorLocal.enable = lib.mkIf cfg.localRag.enable (lib.mkDefault true);
+    services.ollamaLocal.enable = lib.mkIf cfg.localRag.enable (lib.mkDefault true);
 
     home.activation.irccWhatsappBotStateDir = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       /bin/mkdir -p ${lib.escapeShellArg cfg.stateDir}
     '';
 
-    launchd.agents.ircc-whatsapp-bot = lib.mkIf pkgs.stdenv.isDarwin {
+    launchd.agents.ircc-whatsapp-bot = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin {
       enable = true;
       config = {
         ProgramArguments = [ (lib.getExe runner) ];
@@ -153,7 +172,7 @@ in
       };
     };
 
-    systemd.user.services.ircc-whatsapp-bot = lib.mkIf pkgs.stdenv.isLinux {
+    systemd.user.services.ircc-whatsapp-bot = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
       Unit.Description = "IRCC WhatsApp immigration-help bot";
       Service = {
         ExecStart = lib.getExe runner;

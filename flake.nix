@@ -3,8 +3,16 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+  # Optional local-RAG dependency (pgvector + Ollama, exposing an in-DB
+  # embed() SQL function) -- see nix/module.nix's `localRag.enable`. Always
+  # fetched (a flake input can't be conditional), but its module does
+  # nothing unless that option turns it on, same "always import, gate by
+  # .enable" idiom nixpkgs itself uses for `services.postgresql`.
+  inputs.nix-local-rag.url = "github:ismailkattakath/nix-local-rag";
+  inputs.nix-local-rag.inputs.nixpkgs.follows = "nixpkgs";
+
   outputs =
-    { self, nixpkgs }:
+    { self, nixpkgs, nix-local-rag }:
     let
       # x86_64-darwin deliberately excluded: nixpkgs-unstable (26.11) dropped
       # it entirely (Intel Mac sunset) -- pinning to an older nixpkgs just for
@@ -39,9 +47,21 @@
       #   inputs.ircc-whatsapp-bot.inputs.nixpkgs.follows = "nixpkgs";
       #   extraHomeModules = [
       #     ircc-whatsapp-bot.homeManagerModules.default
-      #     { services.irccWhatsappBot = { enable = true; allowedNumbers = [ "1..." ]; }; }
+      #     { services.irccWhatsappBot = {
+      #         enable = true;
+      #         allowedNumbers = [ "1..." ];
+      #         localRag.enable = true; # no Postgres of your own? this provisions one.
+      #       }; }
       #   ];
-      homeManagerModules.default = import ./nix/module.nix;
+      # nix-local-rag's module is always imported (see the input comment above)
+      # so `localRag.enable` has something to flip and `ragdbUri` has
+      # `services.pgvectorLocal.databaseUri` to default from either way.
+      homeManagerModules.default = {
+        imports = [
+          ./nix/module.nix
+          nix-local-rag.homeManagerModules.default
+        ];
+      };
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt-rfc-style);
     };

@@ -181,18 +181,39 @@ Supported systems: `x86_64-linux`, `aarch64-linux`, `aarch64-darwin`
   #   { services.irccWhatsappBot = {
   #       enable = true;
   #       allowedNumbers = [ "15145551234" ]; # real numbers -- keep this in a private flake
+  #       localRag.enable = true; # no Postgres of your own yet? see below
   #     }; }
 }
 ```
 
 See `nix/module.nix` for the full option surface (`package`, `stateDir`,
-`model`, `langsmithTracing`/`langsmithProject`, `ragdbUri`,
+`model`, `langsmithTracing`/`langsmithProject`, `ragdbUri`, `localRag.enable`,
 `environmentFile`). Secrets (`OPENAI_API_KEY`/`SERPER_API_KEY`/
 `LANGCHAIN_API_KEY`) are never read from Nix: set `environmentFile` to a
 `KEY=value` file outside Nix (required on Linux), or on Darwin leave it
 unset to fall back to login-Keychain lookups. Runs under `launchd` on
 Darwin, `systemd --user` on Linux (Linux path is real but untested — no
 Linux host runs this today).
+
+**The RAG database dependency**: this bot needs a reachable Postgres with
+pgvector and an `embed(text)` SQL function (see "What's in the RAG store" —
+actually the section below on setup). That's genuinely third-party
+infrastructure, not something bundled into this flake — bundling it in would
+mean any host running something *else* that also needs Postgres/Ollama (a
+real case: this repo's own author also runs a separate voice-assistant tool
+against the same local Ollama) ends up with two redundant, possibly
+conflicting instances. Instead, following the same
+`services.<app>.database.createLocally` idiom nixpkgs itself uses (see e.g.
+`services.paperless.database.createLocally`):
+- **Already have a compatible Postgres?** Leave `localRag.enable` at its
+  default (`false`) and point `ragdbUri` at it.
+- **Starting from nothing?** Set `localRag.enable = true` — this module
+  always imports [nix-local-rag](https://github.com/ismailkattakath/nix-local-rag)
+  (a separate, independently reusable flake: pgvector + Ollama, launchd/
+  home-manager, no API key, nothing leaves the machine) and, when enabled,
+  turns on its `services.pgvectorLocal`/`services.ollamaLocal` for you.
+  `ragdbUri` already defaults to that service's own connection string, so
+  no further config is needed either way.
 
 **Caution**: never run the built binary (or `nix build`'s `result/`) from a
 directory that holds a *live, paired* `auth/` session while that session's
