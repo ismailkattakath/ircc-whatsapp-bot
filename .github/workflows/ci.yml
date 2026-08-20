@@ -11,17 +11,20 @@ concurrency:
 jobs:
   checks:
     runs-on: macos-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
       - name: Formatting
-        run: nix run nixpkgs#nixfmt-rfc-style -- --check $(find . -name '*.nix')
+        run: |
+          find . -name '*.nix' -print0 |
+            xargs -0 nix run nixpkgs#nixfmt-rfc-style -- --check
       - name: Flake outputs well-formed
         run: nix flake show
       - name: Module eval + package build
         run: nix flake check -L
       - name: Node syntax check
         run: |
-          for f in $(find src scripts -name '*.js'); do
-            nix run nixpkgs#nodejs -- --check "$f"
-          done
+          find src scripts -name '*.js' -print0 |
+            xargs -0 -n1 nix run nixpkgs#nodejs -- --check
