@@ -1,0 +1,28 @@
+{
+  "name": "ircc-whatsapp-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "WhatsApp bot that answers Canadian immigration questions grounded in official IRCC pages, via a local pgvector RAG store.",
+  "main": "src/index.js",
+  "bin": {
+    "ircc-whatsapp-bot": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test:pipeline": "node src/test-pipeline.js",
+    "inngest:serve": "node scripts/inngest/serve.js"
+  },
+  "dependencies": {
+    "@langchain/langgraph": "^1.4.12",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.5",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "inngest": "^4.18.1",
+    "openai": "^4.68.0",
+    "pg": "^8.13.1",
+    "pino": "^9.5.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

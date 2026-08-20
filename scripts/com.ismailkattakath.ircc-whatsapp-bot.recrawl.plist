@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.ismailkattakath.ircc-whatsapp-bot.recrawl</string>
+
+	<key>ProgramArguments</key>
+	<array>
+		<string>/opt/homebrew/bin/node</string>
+		<string>/Users/ismail/Developer/github.com/ismailkattakath/ircc-whatsapp-bot/scripts/recrawl.js</string>
+	</array>
+
+	<key>WorkingDirectory</key>
+	<string>/Users/ismail/Developer/github.com/ismailkattakath/ircc-whatsapp-bot</string>
+
+	<!-- Runs on the 1st of each month at 3:00 AM local time, when the bot
+	     is least likely to be in use and the crawl won't compete with a
+	     live conversation for OpenAI/DB resources. -->
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Day</key>
+		<integer>1</integer>
+		<key>Hour</key>
+		<integer>3</integer>
+		<key>Minute</key>
+		<integer>0</integer>
+	</dict>
+
+	<key>StandardOutPath</key>
+	<string>/Users/ismail/Library/Logs/ircc-whatsapp-bot-recrawl.log</string>
+	<key>StandardErrorPath</key>
+	<string>/Users/ismail/Library/Logs/ircc-whatsapp-bot-recrawl.log</string>
+
+	<key>RunAtLoad</key>
+	<false/>
+</dict>
+</plist>
