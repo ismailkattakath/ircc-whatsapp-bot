@@ -7,13 +7,16 @@ import { webFallback, persistWebFallback } from "./websearch.js";
 // Progressive disclosure, two short steps instead of one 6-option list —
 // W3C COGA guidance on impaired working memory (1-3 items, stricter than
 // the classic "7+-2") for anyone deciding under attention/focus difficulty.
-const MENU_TEXT =
-  "Hi! I can help with questions about coming to Canada, using the official IRCC website.\n\n" +
+const MENU_OPTIONS_TEXT =
   "What are you hoping to do?\n" +
   "1) Visit or stay temporarily (visit, study, or work)\n" +
   "2) Settle in Canada long-term (permanent residence or citizenship)\n" +
   "3) Something else / just ask a question\n\n" +
   "Reply with a number, or just type your question any time.";
+
+const MENU_TEXT =
+  "Hi! I can help with questions about coming to Canada, using the official IRCC website.\n\n" +
+  MENU_OPTIONS_TEXT;
 
 const MENU_SHORT_REMINDER =
   "Want to explore a specific path? Reply with a number:\n" +
@@ -241,7 +244,15 @@ const State = Annotation.Root({
   hasGreeted: Annotation({ default: () => false }),
 });
 
-const GREETING_TEXT = "Hey dear 👋🏽, I'm Izzy's Minion 🤓. He told me, you want to come to Canada. Do you?";
+// No yes/no framing ("...do you?") — a closed question invites a
+// confirmatory reply ("Yes, what should I do?") long enough to trip
+// looksLikeRealQuestion in routeFromStart below and get misrouted into
+// quickAnswer's RAG path instead of the menu. Lead straight into the
+// numbered menu instead, same as MENU_TEXT, so the very first message
+// already tells her exactly how to reply.
+const GREETING_TEXT =
+  "Hey dear 👋🏽, I'm Izzy's Minion 🤓 — I can help with questions about coming to Canada, using the official IRCC website.\n\n" +
+  MENU_OPTIONS_TEXT;
 
 // --- nodes -------------------------------------------------------------------
 
