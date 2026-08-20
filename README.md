@@ -1,9 +1,26 @@
 # ircc-whatsapp-bot
 
+[![CI](https://github.com/ismailkattakath/ircc-whatsapp-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/ismailkattakath/ircc-whatsapp-bot/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Built with Nix](https://img.shields.io/badge/built%20with-Nix-5277C3.svg?logo=nixos&logoColor=white)](https://nixos.org)
+[![LangGraph.js](https://img.shields.io/badge/dialogue-LangGraph.js-1C3C3C.svg)](https://docs.langchain.com/oss/javascript/langgraph)
+
 A WhatsApp bot that answers Canadian immigration questions grounded in
 official IRCC (canada.ca) pages, via a local pgvector RAG store. Built to
 informally help a friend explore her options — not a licensed immigration
 consulting tool. See "Legal boundary" below.
+
+```mermaid
+flowchart LR
+    WA["WhatsApp\n(Baileys)"] <--> IDX["index.js\ntransport + allowlist"]
+    IDX <--> GRAPH["graph.js\nLangGraph.js dialogue"]
+    CKPT[("Postgres\ncheckpointer")] <--> GRAPH
+    GRAPH --> DB[("ragdb\npgvector + embed()")]
+    DB -. "similarity < 0.5" .-> WEB["websearch.js\nCRAG: Serper, site:canada.ca"]
+    WEB -. "persist\nfor next time" .-> DB
+    GRAPH --> LLM["llm.js\nOpenAI synthesis"]
+    LLM --> GRAPH
+```
 
 ## How it works
 

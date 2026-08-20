@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Formatting
+        run: nix run nixpkgs#nixfmt-rfc-style -- --check $(find . -name '*.nix')
+      - name: Flake outputs well-formed
+        run: nix flake show
+      - name: Module eval + package build
+        run: nix flake check -L
+      - name: Node syntax check
+        run: |
+          for f in $(find src scripts -name '*.js'); do
+            nix run nixpkgs#nodejs -- --check "$f"
+          done
